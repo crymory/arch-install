@@ -96,9 +96,9 @@ genfstab -U /mnt >> /mnt/etc/fstab
 # Скачивание отдельного скрипта post-install с GitHub внутрь /mnt
 echo "Скачивание post-install.sh..."
 # НАПРИМЕР: https://raw.githubusercontent.com/username/repo/main/post-install.sh
-URL_НА_ТВОЙ_POST_INSTALL="https://raw.githubusercontent.com/твой-юзернейм/твой-репозиторий/main/post-install.sh"
+URL_POST_INSTALL="https://raw.githubusercontent.com/crymory/arch-install/main/post-install.sh"
 
-curl -L "$URL_НА_ТВОЙ_POST_INSTALL" -o /mnt/post-install.sh
+curl -L "$URL_POST_INSTALL" -o /mnt/post-install.sh
 chmod +x /mnt/post-install.sh
 
 echo "Запуск второй части установки внутри chroot..."
