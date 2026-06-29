@@ -10,22 +10,44 @@ sed -i 's/^#ParallelDownloads = .*/ParallelDownloads = 10/' /etc/pacman.conf
 sed -i '/\[multilib\]/,+1 s/^#//' /etc/pacman.conf
 pacman -Sy --noconfirm
 
-# Часовой пояс и локали
+# --- НАСТРОЙКА ВРЕМЕНИ, ЛОКАЛИЗАЦИИ И ЯЗЫКА ---
 ln -sf /usr/share/zoneinfo/Europe/Kyiv /etc/localtime
 hwclock --systohc
+
+# Генерируем локали (и английскую, и русскую)
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
-echo "uk_UA.UTF-8 UTF-8" >> /etc/locale.gen
+echo "ru_RU.UTF-8 UTF-8" >> /etc/locale.gen
 locale-gen
-echo "LANG=en_US.UTF-8" > /etc/locale.conf
+
+# Устанавливаем русский язык основным для системы
+echo "LANG=ru_RU.UTF-8" > /etc/locale.conf
 echo "arch-perf" > /etc/hostname
 
-# Настройка паролей (переменные переданы из основного скрипта)
+# Настройка раскладки клавиатуры в консоли (до запуска графики)
+echo "KEYMAP=ru" > /etc/vconsole.conf
+echo "FONT=cyr-sun16" >> /etc/vconsole.conf
+
+# Настройка раскладки клавиатуры для X11/Wayland (KDE Plasma подхватит автоматически)
+# Задает раскладки en(us) и ru, переключение по Alt+Shift
+mkdir -p /etc/X11/xorg.conf.d
+cat << 'KEYBOARD' > /etc/X11/xorg.conf.d/00-keyboard.conf
+Section "InputClass"
+        Identifier "system-keyboard"
+        MatchIsKeyboard "on"
+        Option "XkbLayout" "us,ru"
+        Option "XkbOptions" "grp:alt_shift_toggle"
+EndSection
+KEYBOARD
+
+
+# --- НАСТРОЙКА ПОЛЬЗОВАТЕЛЕЙ ---
 echo "root:$ROOT_PASSWORD" | chpasswd
 useradd -m -G wheel -s /bin/bash "$USERNAME"
 echo "$USERNAME:$USER_PASSWORD" | chpasswd
 echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers.d/wheel
 
-# Автоопределение видеокарты и подбор пакетов
+
+# --- АВТООПРЕДЕЛЕНИЕ ВИДЕОКАРТЫ ---
 echo "Определение GPU..."
 GPU_PKGS=""
 if lspci | grep -iq "nvidia"; then
@@ -37,12 +59,15 @@ else
 fi
 pacman -S --noconfirm $GPU_PKGS
 
-# Установка KDE Plasma, терминала, аудиосервера (Pipewire)
+
+# --- УСТАНОВКА ОКРУЖЕНИЯ ---
+# Ставим KDE Plasma, терминал, файловый менеджер и аудиосервер
 pacman -S --noconfirm plasma-desktop sddm konsole dolphin kate network-manager-applet pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber
 
 # Включение системных служб
 systemctl enable NetworkManager
 systemctl enable sddm
+
 
 # --- ТВЕКИ МАКСИМАЛЬНОЙ ПРОИЗВОДИТЕЛЬНОСТИ ---
 
@@ -63,7 +88,8 @@ ZRM
 # 3. Утилиты оптимизации планировщика для игр
 pacman -S --noconfirm gamemode lib32-gamemode gamescope
 
-# Установка и настройка GRUB
+
+# --- УСТАНОВКА ЗАГРУЗЧИКА ---
 pacman -S --noconfirm grub efibootmgr
 grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
